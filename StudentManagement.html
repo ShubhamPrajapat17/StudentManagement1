@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Management System</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+        /* Custom scrollbar for sidebar */
+        .sidebar-scroll::-webkit-scrollbar { width: 4px; }
+        .sidebar-scroll::-webkit-scrollbar-track { background: #1e3a5f; }
+        .sidebar-scroll::-webkit-scrollbar-thumb { background: #4a7db5; border-radius: 2px; }
+
+        /* Smooth transitions */
+        .tab-panel { transition: opacity 0.2s ease-in-out; }
+
+        /* Print styles for report card */
+        @media print {
+            body * { visibility: hidden; }
+            #reportCard, #reportCard * { visibility: visible; }
+            #reportCard { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none !important; }
+        }
+
+        /* GridView Tailwind overrides */
+        .gridview-tailwind {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .gridview-tailwind th {
+            background-color: #f3f4f6;
+            color: #374151;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            padding: 10px 12px;
+            border-bottom: 2px solid #e5e7eb;
+            cursor: pointer;
+        }
+        .gridview-tailwind th:hover {
+            background-color: #e5e7eb;
+        }
+        .gridview-tailwind td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 0.875rem;
+        }
+        .gridview-tailwind tr:hover td {
+            background-color: #f9fafb;
+        }
+        .gridview-tailwind .pager {
+            background-color: #f9fafb;
+            padding: 10px;
+        }
+        .gridview-tailwind .pager table {
+            margin: 0 auto;
+        }
+        .gridview-tailwind .pager a {
+            padding: 4px 10px;
+            margin: 0 2px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            color: #374151;
+            text-decoration: none;
+            background: white;
+        }
+        .gridview-tailwind .pager a:hover {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+        .gridview-tailwind .pager span {
+            padding: 4px 10px;
+            margin: 0 2px;
+            border: 1px solid #3b82f6;
+            border-radius: 4px;
+            background: #3b82f6;
+            color: white;
+            font-weight: bold;
+        }
+
+        /* Form input focus styles */
+        input:focus, select:focus, textarea:focus {
+            ring: 2px solid #3b82f6;
+        }
+
+        /* Chart containers */
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+
+        /* Notification log scrolling */
+        .notification-scroll {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .notification-scroll::-webkit-scrollbar { width: 4px; }
+        .notification-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+
+        /* Badge pulse animation for alerts */
+        @keyframes pulse-warning {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .alert-pulse {
+            animation: pulse-warning 1.5s ease-in-out infinite;
+        }
+    
+body{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f8fafc}
+.hidden-panel{display:none!important}
+</style>
+</head>
+<body>
+<div id="loginPanel" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+    <div class="text-center mb-7"><div class="w-16 h-16 mx-auto rounded-2xl bg-blue-600 text-white flex items-center justify-center text-2xl"><i class="fas fa-user-graduate"></i></div><h1 class="text-2xl font-bold text-gray-800 mt-4">Student Management System</h1><p class="text-gray-500 text-sm mt-1">Sign in to continue</p></div>
+    <form id="loginForm" class="space-y-4">
+      <div><label class="block text-sm font-medium text-gray-700 mb-1">Username</label><input id="username" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter username" required></div>
+      <div><label class="block text-sm font-medium text-gray-700 mb-1">Password</label><input id="password" type="password" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" placeholder="••••••••" required></div>
+      <p id="loginError" class="text-red-600 text-sm hidden"></p>
+      <button class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-semibold">Sign In</button>
+    </form>
+    <div class="mt-5 p-3 bg-gray-50 rounded-lg text-xs text-gray-600"><b>Demo:</b> admin / admin123 &nbsp; | &nbsp; parent / parent123</div>
+  </div>
+</div>
+
+<div id="mainPanel" class="hidden min-h-screen">
+  <aside class="fixed inset-y-0 left-0 w-64 bg-slate-900 text-white sidebar-scroll overflow-y-auto">
+    <div class="p-5 border-b border-slate-700"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center"><i class="fas fa-user-graduate"></i></div><div><h2 class="font-bold text-sm">Student Portal</h2><p class="text-xs text-slate-400">Management System</p></div></div></div>
+    <nav class="p-3 space-y-1">
+      <button data-tab="dashboard" class="nav-btn w-full text-left px-4 py-3 rounded-lg hover:bg-slate-800"><i class="fas fa-chart-pie w-6"></i> Dashboard</button>
+      <button data-tab="registration" class="nav-btn w-full text-left px-4 py-3 rounded-lg hover:bg-slate-800 admin-only"><i class="fas fa-user-plus w-6"></i> Registration</button>
+      <button data-tab="records" class="nav-btn w-full text-left px-4 py-3 rounded-lg hover:bg-slate-800"><i class="fas fa-table w-6"></i> Records</button>
+      <button data-tab="reports" class="nav-btn w-full text-left px-4 py-3 rounded-lg hover:bg-slate-800"><i class="fas fa-file-alt w-6"></i> Reports</button>
+      <hr class="border-slate-700 my-2">
+      <button data-tab="parent" class="nav-btn w-full text-left px-4 py-3 rounded-lg hover:bg-slate-800"><i class="fas fa-users w-6"></i> Parent Portal</button>
+    </nav>
+  </aside>
+
+  <div class="ml-64 min-h-screen">
+    <header class="bg-white shadow-sm border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-20">
+      <div><h1 class="text-lg font-bold text-gray-800">Student Management System</h1><p id="pageSubtitle" class="text-xs text-gray-500">Dashboard</p></div>
+      <div class="flex items-center gap-3"><span id="roleDisplay" class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700"></span><span id="welcome" class="text-sm text-gray-600"></span><select id="roleSwitch" class="border rounded-lg px-2 py-1.5 text-sm"><option value="">Switch Role</option><option value="Admin">Admin</option><option value="Parent">Parent</option></select><button id="logout" class="px-3 py-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-sm font-semibold">Logout</button></div>
+    </header>
+
+    <main class="p-6">
+      <section id="dashboard" class="tab-panel">
+        <h2 class="text-2xl font-bold text-gray-800 mb-5">📊 Dashboard Overview</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+          <div class="bg-white rounded-xl shadow-sm p-5"><p class="text-sm text-gray-500">Total Students</p><p id="totalStudents" class="text-3xl font-bold mt-1">0</p></div>
+          <div class="bg-white rounded-xl shadow-sm p-5"><p class="text-sm text-gray-500">Average Attendance</p><p id="avgAttendance" class="text-3xl font-bold text-green-600 mt-1">0%</p></div>
+          <div class="bg-white rounded-xl shadow-sm p-5"><p class="text-sm text-gray-500">Average CGPA</p><p id="avgCgpa" class="text-3xl font-bold text-purple-600 mt-1">0.00</p></div>
+          <div class="bg-white rounded-xl shadow-sm p-5"><p class="text-sm text-gray-500">Attendance Alerts</p><p id="attendanceAlerts" class="text-3xl font-bold text-red-600 mt-1">0</p></div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5"><div class="bg-white rounded-xl shadow-sm p-4"><h3 class="font-semibold mb-3">Attendance Overview</h3><canvas id="attendanceChart"></canvas></div><div class="bg-white rounded-xl shadow-sm p-4"><h3 class="font-semibold mb-3">Semester Performance</h3><canvas id="performanceChart"></canvas></div><div class="bg-white rounded-xl shadow-sm p-4"><h3 class="font-semibold mb-3">CGPA Distribution</h3><canvas id="cgpaChart"></canvas></div></div>
+        <div class="bg-white rounded-xl shadow-sm p-5 mt-5"><h3 class="font-semibold mb-3">Recent Activity</h3><div id="activityLog" class="space-y-2 text-sm text-gray-600"></div></div>
+      </section>
+
+      <section id="registration" class="tab-panel hidden-panel admin-only-panel"><h2 class="text-2xl font-bold text-gray-800 mb-5">📝 Student Registration</h2>
+        <form id="studentForm" class="bg-white rounded-xl shadow-sm p-6 space-y-6">
+          <div><h3 class="font-semibold text-gray-700 border-b pb-2 mb-3">Student Details</h3><div class="grid md:grid-cols-3 gap-4"><input id="name" required placeholder="Student's full name" class="field"><input id="course" required placeholder="e.g. B.Tech CSE" class="field"><input id="email" type="email" required placeholder="student@example.com" class="field"></div></div>
+          <div><h3 class="font-semibold text-gray-700 border-b pb-2 mb-3">Parent Details</h3><div class="grid md:grid-cols-4 gap-4"><input id="father" placeholder="Father's full name" class="field"><input id="mother" placeholder="Mother's full name" class="field"><input id="parentContact" placeholder="+91-9876543210" class="field"><input id="occupation" placeholder="e.g. Engineer, Doctor" class="field"></div></div>
+          <div><h3 class="font-semibold text-gray-700 border-b pb-2 mb-3">College Details</h3><div class="grid md:grid-cols-2 gap-4"><input id="college" placeholder="College / University name" class="field"><input id="collegeAddress" placeholder="City, State" class="field"></div></div>
+          <div><h3 class="font-semibold text-gray-700 border-b pb-2 mb-3">Academic Details</h3><div class="grid md:grid-cols-4 gap-4"><input id="attendance" type="number" step="0.1" min="0" max="100" required placeholder="Attendance %" class="field"><input id="sem1" type="number" min="0" max="100" required placeholder="Semester 1" class="field"><input id="sem2" type="number" min="0" max="100" required placeholder="Semester 2" class="field"><input id="sem3" type="number" min="0" max="100" required placeholder="Semester 3" class="field"></div></div>
+          <div class="flex gap-3"><button class="bg-blue-600 text-white px-5 py-2.5 rounded-lg font-semibold">➕ Add Student</button><button type="button" id="clearForm" class="bg-gray-100 px-5 py-2.5 rounded-lg">✕ Clear Form</button></div>
+        </form>
+      </section>
+
+      <section id="records" class="tab-panel hidden-panel"><div class="flex justify-between items-center mb-5"><h2 class="text-2xl font-bold text-gray-800">📋 Student Records</h2><span id="resultCount" class="text-sm text-gray-500"></span></div>
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-4 flex flex-wrap gap-3"><input id="search" placeholder="Search name, email, course..." class="field flex-1 min-w-64"><input id="courseFilter" placeholder="Filter by course" class="field"><button id="clearFilter" class="px-4 py-2 rounded-lg bg-gray-100">✕ Clear</button></div>
+        <div class="bg-white rounded-xl shadow-sm overflow-x-auto"><table class="gridview-tailwind"><thead><tr><th>ID</th><th>Name</th><th>Course</th><th>Email</th><th>Father</th><th>Mother</th><th>Contact</th><th>College</th><th>Att. %</th><th>Sem1</th><th>Sem2</th><th>Sem3</th><th>CGPA</th><th>Report</th><th>Actions</th></tr></thead><tbody id="recordsBody"></tbody></table></div>
+      </section>
+
+      <section id="reports" class="tab-panel hidden-panel"><h2 class="text-2xl font-bold text-gray-800 mb-5">📊 Reports & Exports</h2><div class="grid md:grid-cols-2 gap-5"><div class="bg-white rounded-xl shadow-sm p-6"><h3 class="font-semibold">Export to Excel</h3><p class="text-sm text-gray-500 my-2">Download all student records as CSV.</p><button id="exportBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg">📥 Download Excel (.csv)</button></div><div class="bg-white rounded-xl shadow-sm p-6"><h3 class="font-semibold">Generate Report Cards</h3><p class="text-sm text-gray-500 my-2">Open a printable report card for any student.</p><select id="reportStudent" class="field mb-3 w-full"></select><button id="reportBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg">📄 Generate Report Card</button></div></div><div class="grid grid-cols-4 gap-4 mt-5"><div class="bg-white p-5 rounded-xl"><p class="text-sm text-gray-500">Total</p><b id="statTotal" class="text-2xl"></b></div><div class="bg-white p-5 rounded-xl"><p class="text-sm text-gray-500">Pass</p><b id="statPass" class="text-2xl text-green-600"></b></div><div class="bg-white p-5 rounded-xl"><p class="text-sm text-gray-500">Fail</p><b id="statFail" class="text-2xl text-red-600"></b></div><div class="bg-white p-5 rounded-xl"><p class="text-sm text-gray-500">Attendance Alert</p><b id="statAlert" class="text-2xl text-yellow-600"></b></div></div></section>
+
+      <section id="parent" class="tab-panel hidden-panel"><h2 class="text-2xl font-bold text-gray-800 mb-5">👪 Parent Portal</h2><div class="bg-white rounded-xl shadow-sm p-6"><div class="flex gap-3"><input id="parentSearch" class="field flex-1" placeholder="Enter ID, email or student name..."><button id="parentSearchBtn" class="bg-blue-600 text-white px-5 py-2 rounded-lg">🔍 Search</button></div><div id="parentResult" class="mt-5"></div></div></section>
+    </main>
+  </div>
+</div>
+
+<div id="reportModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"><div class="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-auto"><div class="p-4 border-b flex justify-between no-print"><h3 class="font-bold">Student Report Card</h3><div><button onclick="window.print()" class="px-3 py-2 bg-blue-600 text-white rounded-lg mr-2">Print</button><button id="closeModal" class="px-3 py-2 bg-gray-100 rounded-lg">Close</button></div></div><div id="reportCard" class="p-8"></div></div></div>
+
+<script>
+const FIELD='w-full px-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500'; document.querySelectorAll('.field').forEach(e=>e.classList.add(...FIELD.split(' ')));
+const seed=[{id:1001,name:'Rahul Sharma',course:'B.Tech CSE',email:'rahul@example.com',father:'Rakesh Sharma',mother:'Sunita Sharma',parentContact:'9876543210',occupation:'Engineer',college:'ABC Engineering College',collegeAddress:'Ahmedabad, Gujarat',attendance:88,sem1:82,sem2:79,sem3:91},{id:1002,name:'Priya Patel',course:'BCA',email:'priya@example.com',father:'Mahesh Patel',mother:'Kiran Patel',parentContact:'9876500000',occupation:'Business',college:'XYZ College',collegeAddress:'Ahmedabad, Gujarat',attendance:72,sem1:68,sem2:74,sem3:77},{id:1003,name:'Amit Kumar',course:'B.Tech CSE',email:'amit@example.com',father:'Suresh Kumar',mother:'Anita Kumar',parentContact:'9876511111',occupation:'Teacher',college:'ABC Engineering College',collegeAddress:'Ahmedabad, Gujarat',attendance:64,sem1:55,sem2:61,sem3:58}];
+let students=JSON.parse(localStorage.getItem('sms_students')||'null')||seed; let currentUser=null; let charts={};
+const save=()=>localStorage.setItem('sms_students',JSON.stringify(students)); const cgpa=s=>(+(Math.min((+s.sem1+(+s.sem2)+(+s.sem3))/30,10)).toFixed(2));
+function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+function activity(msg){let a=JSON.parse(localStorage.getItem('sms_activity')||'[]');a.unshift({msg,time:new Date().toLocaleString()});localStorage.setItem('sms_activity',JSON.stringify(a.slice(0,10)));renderActivity();}
+function renderActivity(){let a=JSON.parse(localStorage.getItem('sms_activity')||'[]');document.getElementById('activityLog').innerHTML=a.length?a.map(x=>`<div class="border-b pb-2"><b>${esc(x.msg)}</b><span class="text-xs text-gray-400 ml-2">${x.time}</span></div>`).join(''):'<p>No recent activity.</p>';}
+function login(){let u=username.value.trim(),p=password.value;if((u==='admin'&&p==='admin123')||(u==='parent'&&p==='parent123')){currentUser={username:u,role:u==='admin'?'Admin':'Parent'};sessionStorage.setItem('sms_user',JSON.stringify(currentUser));startApp();}else{loginError.textContent='Invalid username or password.';loginError.classList.remove('hidden');}}
+function startApp(){loginPanel.classList.add('hidden');mainPanel.classList.remove('hidden');welcome.textContent='Welcome, '+currentUser.username;roleDisplay.textContent=currentUser.role;if(currentUser.role!=='Admin'){document.querySelectorAll('.admin-only,.admin-only-panel').forEach(e=>e.classList.add('hidden-panel'));}else{document.querySelectorAll('.admin-only').forEach(e=>e.classList.remove('hidden-panel'));}showTab(currentUser.role==='Parent'?'parent':'dashboard');refreshAll();}
+function showTab(tab){document.querySelectorAll('.tab-panel').forEach(x=>x.classList.add('hidden-panel'));let el=document.getElementById(tab);if(el)el.classList.remove('hidden-panel');document.querySelectorAll('.nav-btn').forEach(x=>x.classList.toggle('bg-blue-600',x.dataset.tab===tab));document.getElementById('pageSubtitle').textContent=tab.charAt(0).toUpperCase()+tab.slice(1);if(tab==='dashboard')setTimeout(drawCharts,50);if(tab==='reports')renderReports();}
+function refreshAll(){renderDashboard();renderRecords();renderReportOptions();renderReports();renderActivity();}
+function renderDashboard(){let n=students.length,att=n?students.reduce((a,s)=>a+ +s.attendance,0)/n:0,c=n?students.reduce((a,s)=>a+cgpa(s),0)/n:0;totalStudents.textContent=n;avgAttendance.textContent=att.toFixed(1)+'%';avgCgpa.textContent=c.toFixed(2);attendanceAlerts.textContent=students.filter(s=>+s.attendance<75).length;drawCharts();}
+function drawCharts(){if(!window.Chart)return;Object.values(charts).forEach(c=>c.destroy());charts={};let labels=students.map(s=>s.name);charts.a=new Chart(document.getElementById('attendanceChart'),{type:'bar',data:{labels,datasets:[{label:'Attendance %',data:students.map(s=>s.attendance)}]},options:{responsive:true,scales:{y:{beginAtZero:true,max:100}}}});charts.p=new Chart(document.getElementById('performanceChart'),{type:'line',data:{labels:['Sem 1','Sem 2','Sem 3'],datasets:[{label:'Average Marks',data:[avg('sem1'),avg('sem2'),avg('sem3')],tension:.3}]}});let pass=students.filter(s=>cgpa(s)>=5).length;charts.c=new Chart(document.getElementById('cgpaChart'),{type:'doughnut',data:{labels:['Pass','Fail'],datasets:[{data:[pass,n-pass]}]}});}
+function avg(k){return students.length?students.reduce((a,s)=>a+ +s[k],0)/students.length:0;}
+function renderRecords(){let q=search.value.toLowerCase(),cf=courseFilter.value.toLowerCase();let arr=students.filter(s=>(!q||[s.name,s.email,s.course,s.father,s.mother].some(v=>String(v).toLowerCase().includes(q)))&&(!cf||s.course.toLowerCase().includes(cf)));resultCount.textContent=arr.length+' result(s)';recordsBody.innerHTML=arr.map(s=>`<tr><td>${s.id}</td><td>${esc(s.name)}</td><td>${esc(s.course)}</td><td>${esc(s.email)}</td><td>${esc(s.father)}</td><td>${esc(s.mother)}</td><td>${esc(s.parentContact)}</td><td>${esc(s.college)}</td><td>${s.attendance}%</td><td>${s.sem1}</td><td>${s.sem2}</td><td>${s.sem3}</td><td>${cgpa(s)}</td><td><button class="text-blue-600" onclick="openReport(${s.id})">📄</button></td><td><button class="text-red-600" onclick="deleteStudent(${s.id})">Delete</button></td></tr>`).join('')||'<tr><td colspan="15" class="text-center py-6">No students found.</td></tr>';}
+function addStudent(e){e.preventDefault();let s={id:students.length?Math.max(...students.map(x=>x.id))+1:1001,name:name.value.trim(),course:course.value.trim(),email:email.value.trim(),father:father.value.trim(),mother:mother.value.trim(),parentContact:parentContact.value.trim(),occupation:occupation.value.trim(),college:college.value.trim(),collegeAddress:collegeAddress.value.trim(),attendance:+attendance.value,sem1:+sem1.value,sem2:+sem2.value,sem3:+sem3.value};if([s.attendance,s.sem1,s.sem2,s.sem3].some(v=>isNaN(v)||v<0||v>100))return Swal.fire('Invalid','Marks and attendance must be between 0 and 100.','error');students.push(s);save();studentForm.reset();activity('Added student '+s.name);refreshAll();Swal.fire('Success','Student added successfully.','success');}
+function deleteStudent(id){if(currentUser.role!=='Admin')return;Swal.fire({title:'Delete student?',icon:'warning',showCancelButton:true,confirmButtonText:'Delete'}).then(r=>{if(r.isConfirmed){let s=students.find(x=>x.id===id);students=students.filter(x=>x.id!==id);save();activity('Deleted student '+(s?s.name:id));refreshAll();}})}
+function renderReportOptions(){reportStudent.innerHTML=students.map(s=>`<option value="${s.id}">${s.id} - ${esc(s.name)}</option>`).join('');}
+function openReport(id){let s=students.find(x=>x.id==id);if(!s)return;reportCard.innerHTML=`<div class="text-center border-b pb-4 mb-5"><h1 class="text-2xl font-bold">STUDENT REPORT CARD</h1><p class="text-gray-500">Student Management System</p></div><div class="grid grid-cols-2 gap-3 text-sm"><p><b>ID:</b> ${s.id}</p><p><b>Name:</b> ${esc(s.name)}</p><p><b>Course:</b> ${esc(s.course)}</p><p><b>Email:</b> ${esc(s.email)}</p><p><b>Father:</b> ${esc(s.father)}</p><p><b>Mother:</b> ${esc(s.mother)}</p><p><b>College:</b> ${esc(s.college)}</p><p><b>Attendance:</b> ${s.attendance}%</p></div><table class="w-full mt-6 border-collapse"><tr><th class="border p-2">Semester</th><th class="border p-2">Marks</th></tr><tr><td class="border p-2">Semester 1</td><td class="border p-2">${s.sem1}</td></tr><tr><td class="border p-2">Semester 2</td><td class="border p-2">${s.sem2}</td></tr><tr><td class="border p-2">Semester 3</td><td class="border p-2">${s.sem3}</td></tr><tr><td class="border p-2 font-bold">CGPA</td><td class="border p-2 font-bold">${cgpa(s)}</td></tr></table>`;reportModal.classList.remove('hidden');}
+function renderReports(){let pass=students.filter(s=>cgpa(s)>=5).length;statTotal.textContent=students.length;statPass.textContent=pass;statFail.textContent=students.length-pass;statAlert.textContent=students.filter(s=>s.attendance<75).length;}
+function parentSearchFn(){let q=parentSearch.value.toLowerCase().trim();let s=students.find(x=>String(x.id)===q||x.email.toLowerCase()===q||x.name.toLowerCase().includes(q));parentResult.innerHTML=s?`<div class="border rounded-xl p-5"><h3 class="text-xl font-bold">${esc(s.name)}</h3><p class="text-gray-500">${esc(s.course)} | ID: ${s.id}</p><div class="grid md:grid-cols-4 gap-4 mt-4"><div><b>Attendance</b><p>${s.attendance}%</p></div><div><b>Semester 1</b><p>${s.sem1}</p></div><div><b>Semester 2</b><p>${s.sem2}</p></div><div><b>Semester 3</b><p>${s.sem3}</p></div></div><button onclick="openReport(${s.id})" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg">📄 View Report Card</button></div>`:'<p class="text-red-600">Student not found.</p>';}
+function exportCSV(){let headers=['ID','Name','Course','Email','Father','Mother','Parent Contact','College','Attendance','Sem1','Sem2','Sem3','CGPA'];let rows=students.map(s=>[s.id,s.name,s.course,s.email,s.father,s.mother,s.parentContact,s.college,s.attendance,s.sem1,s.sem2,s.sem3,cgpa(s)]);let csv=[headers,...rows].map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='student_records.csv';a.click();}
+loginForm.addEventListener('submit',e=>{e.preventDefault();login();});document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));studentForm.addEventListener('submit',addStudent);clearForm.addEventListener('click',()=>studentForm.reset());search.addEventListener('input',renderRecords);courseFilter.addEventListener('input',renderRecords);clearFilter.addEventListener('click',()=>{search.value='';courseFilter.value='';renderRecords();});logout.addEventListener('click',()=>{sessionStorage.removeItem('sms_user');location.reload();});roleSwitch.addEventListener('change',()=>{if(currentUser.username==='admin'&&roleSwitch.value){currentUser.role=roleSwitch.value;roleDisplay.textContent=currentUser.role;startApp();}roleSwitch.value='';});exportBtn.addEventListener('click',exportCSV);reportBtn.addEventListener('click',()=>openReport(reportStudent.value));parentSearchBtn.addEventListener('click',parentSearchFn);parentSearch.addEventListener('keydown',e=>{if(e.key==='Enter')parentSearchFn();});closeModal.addEventListener('click',()=>reportModal.classList.add('hidden'));reportModal.addEventListener('click',e=>{if(e.target===reportModal)reportModal.classList.add('hidden')});
+let saved=sessionStorage.getItem('sms_user');if(saved){currentUser=JSON.parse(saved);startApp();}
+</script>
+</body></html>
